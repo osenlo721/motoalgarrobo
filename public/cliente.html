@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#1A6B2F"/>
+  <title>MotoAlgarrobo - Cliente</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',sans-serif; background:#F1EFE8; }
+
+    header { background:#1A6B2F; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; }
+    header .user { display:flex; flex-direction:column; }
+    header .user span:first-child { font-size:11px; color:#9FE1CB; }
+    header .user span:last-child { font-size:15px; font-weight:700; color:#fff; }
+    header .avatar { width:36px; height:36px; border-radius:50%; background:#F5D800; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; color:#1A6B2F; cursor:pointer; }
+
+    #map { height:55vw; max-height:280px; width:100%; }
+
+    .panel { background:#fff; border-radius:20px 20px 0 0; margin-top:-12px; padding:20px 18px 32px; position:relative; z-index:10; }
+
+    label { font-size:12px; color:#5F5E5A; display:block; margin-bottom:4px; }
+    .input-wrap { position:relative; margin-bottom:14px; }
+    .input-wrap input { width:100%; padding:11px 14px 11px 36px; border-radius:10px; border:1.5px solid #D3D1C7; font-size:14px; background:#F1EFE8; color:#2C2C2A; outline:none; }
+    .input-wrap input:focus { border-color:#1A6B2F; }
+    .input-wrap .ico { position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:16px; }
+
+    .stats { display:flex; gap:10px; margin-bottom:16px; }
+    .stat { flex:1; background:#EAF3DE; border-radius:10px; padding:10px; text-align:center; }
+    .stat .val { font-size:18px; font-weight:700; color:#1A6B2F; }
+    .stat .lbl { font-size:10px; color:#3B6D11; margin-top:2px; }
+
+    .btn-pedir { width:100%; padding:14px; background:#1A6B2F; color:#fff; border:none; border-radius:12px; font-size:16px; font-weight:700; cursor:pointer; }
+    .btn-pedir:active { opacity:0.85; }
+    .btn-pedir:disabled { background:#B4B2A9; cursor:not-allowed; }
+
+    .motos-badge { position:absolute; top:-16px; right:18px; background:#1A6B2F; color:#fff; font-size:11px; padding:5px 12px; border-radius:20px; font-weight:600; }
+
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:100; align-items:flex-end; justify-content:center; }
+    .modal-overlay.show { display:flex; }
+    .modal { background:#fff; border-radius:20px 20px 0 0; padding:24px 20px 36px; width:100%; max-width:400px; }
+    .modal h3 { font-size:16px; font-weight:700; color:#1A6B2F; margin-bottom:16px; text-align:center; }
+    .modal .moto-card { background:#EAF3DE; border-radius:12px; padding:14px; margin-bottom:14px; }
+    .modal .moto-info { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .modal .moto-avatar { width:44px; height:44px; border-radius:50%; background:#1A6B2F; display:flex; align-items:center; justify-content:center; font-weight:700; color:#F5D800; font-size:14px; }
+    .modal .moto-name { font-size:14px; font-weight:700; color:#1A6B2F; }
+    .modal .moto-placa { font-size:12px; color:#3B6D11; }
+    .modal .stars { color:#F5D800; font-size:14px; }
+    .btn-cancelar { width:100%; padding:12px; background:#fff; color:#E24B4A; border:1.5px solid #E24B4A; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; margin-top:10px; }
+
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1A6B2F; color:#fff; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:200; display:none; }
+    .toast.show { display:block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="user">
+    <span>Bienvenido</span>
+    <span id="user-name">Cargando...</span>
+  </div>
+  <div class="avatar" id="avatar" onclick="cerrarSesion()">--</div>
+</header>
+
+<div id="map"></div>
+
+<div class="panel">
+  <div class="motos-badge" id="motos-badge">0 motos cerca</div>
+
+  <div class="input-wrap">
+    <span class="ico">📍</span>
+    <label></label>
+    <input type="text" id="origen" placeholder="Tu ubicación actual..." readonly/>
+  </div>
+
+  <div class="input-wrap">
+    <span class="ico">🏁</span>
+    <label></label>
+    <input type="text" id="destino" placeholder="¿A dónde vas?"/>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="val" id="precio-est">$--</div><div class="lbl">Precio aprox.</div></div>
+    <div class="stat"><div class="val" id="tiempo-est">-- min</div><div class="lbl">Tiempo est.</div></div>
+    <div class="stat"><div class="val" id="dist-est">-- km</div><div class="lbl">Distancia</div></div>
+  </div>
+
+  <button class="btn-pedir" id="btn-pedir" onclick="pedirCarrera()" disabled>Pedir moto</button>
+</div>
+
+<div class="modal-overlay" id="modal-buscando">
+  <div class="modal">
+    <h3>🔍 Buscando mototaxista...</h3>
+    <p style="text-align:center;font-size:13px;color:#5F5E5A;margin-bottom:20px;">Tu solicitud fue enviada a los mototaxistas disponibles</p>
+    <div class="moto-card" id="moto-aceptado" style="display:none;">
+      <div class="moto-info">
+        <div class="moto-avatar" id="moto-avatar">JP</div>
+        <div>
+          <div class="moto-name" id="moto-nombre">Juan Pérez</div>
+          <div class="moto-placa" id="moto-placa">Honda CB110 • ABC 123</div>
+          <div class="stars">★★★★☆ <span style="font-size:12px;color:#5F5E5A;">4.3</span></div>
+        </div>
+      </div>
+      <button class="btn-pedir" onclick="verCarrera()" style="font-size:14px;padding:11px;">Ver en mapa</button>
+    </div>
+    <button class="btn-cancelar" onclick="cancelarBusqueda()">Cancelar</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+  import { auth, db } from './js/firebase-config.js';
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { collection, addDoc, onSnapshot, query, where, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  let map, userMarker, userLat, userLng, carreraId, unsubCarrera;
+  let mototaxistasMarkers = {};
+
+  onAuthStateChanged(auth, user => {
+    if (!user) { window.location.href = 'index.html'; return; }
+    const initials = user.displayName ? user.displayName.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : user.email.slice(0,2).toUpperCase();
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+    document.getElementById('avatar').textContent = initials;
+    initMap();
+    escucharMototaxistas();
+  });
+
+  function initMap() {
+    map = L.map('map').setView([10.1628, -74.7277], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OSM' }).addTo(map);
+    navigator.geolocation.getCurrentPosition(pos => {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      map.setView([userLat, userLng], 16);
+      userMarker = L.marker([userLat, userLng]).addTo(map).bindPopup('Tú').openPopup();
+      document.getElementById('origen').value = 'Mi ubicación actual';
+      calcularEstimado();
+    }, () => {
+      userLat = 10.1628; userLng = -74.7277;
+      document.getElementById('origen').value = 'Algarrobo, Magdalena';
+    });
+  }
+
+  function escucharMototaxistas() {
+    const q = query(collection(db, 'mototaxistas'), where('disponible', '==', true));
+    onSnapshot(q, snap => {
+      Object.values(mototaxistasMarkers).forEach(m => map.removeLayer(m));
+      mototaxistasMarkers = {};
+      snap.forEach(doc => {
+        const d = doc.data();
+        if (d.lat && d.lng) {
+          const icon = L.divIcon({ html: '🏍️', className:'', iconSize:[28,28] });
+          mototaxistasMarkers[doc.id] = L.marker([d.lat, d.lng], {icon}).addTo(map).bindPopup(d.nombre || 'Mototaxista');
+        }
+      });
+      document.getElementById('motos-badge').textContent = snap.size + ' motos cerca';
+    });
+  }
+
+  function calcularEstimado() {
+    const destino = document.getElementById('destino').value;
+    if (destino.length > 3) {
+      document.getElementById('precio-est').textContent = '$3.500';
+      document.getElementById('tiempo-est').textContent = '5 min';
+      document.getElementById('dist-est').textContent = '1.2 km';
+      document.getElementById('btn-pedir').disabled = false;
+    }
+  }
+
+  document.getElementById('destino').addEventListener('input', calcularEstimado);
+
+  window.pedirCarrera = async () => {
+    const user = auth.currentUser;
+    const destino = document.getElementById('destino').value;
+    if (!destino) return;
+    document.getElementById('modal-buscando').classList.add('show');
+    const ref = await addDoc(collection(db, 'carreras'), {
+      clienteId: user.uid,
+      clienteNombre: user.displayName || user.email,
+      origenLat: userLat, origenLng: userLng,
+      origen: document.getElementById('origen').value,
+      destino,
+      estado: 'buscando',
+      precio: 3500,
+      createdAt: serverTimestamp()
+    });
+    carreraId = ref.id;
+    unsubCarrera = onSnapshot(doc(db, 'carreras', carreraId), snap => {
+      const d = snap.data();
+      if (d?.estado === 'aceptada') {
+        document.getElementById('moto-nombre').textContent = d.mototaxistaNombre || 'Mototaxista';
+        document.getElementById('moto-avatar').textContent = (d.mototaxistaNombre||'MT').slice(0,2).toUpperCase();
+        document.getElementById('moto-aceptado').style.display = 'block';
+        mostrarToast('¡Mototaxista en camino!');
+      }
+    });
+  };
+
+  window.cancelarBusqueda = async () => {
+    if (carreraId) await updateDoc(doc(db, 'carreras', carreraId), { estado: 'cancelada' });
+    if (unsubCarrera) unsubCarrera();
+    document.getElementById('modal-buscando').classList.remove('show');
+  };
+
+  window.verCarrera = () => { window.location.href = 'carrera.html?id=' + carreraId; };
+
+  window.cerrarSesion = async () => { await signOut(auth); window.location.href = 'index.html'; };
+
+  function mostrarToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>

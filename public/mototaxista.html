@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#1A6B2F"/>
+  <title>MotoAlgarrobo - Mototaxista</title>
+  <link rel="manifest" href="manifest.json"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',sans-serif; background:#F1EFE8; }
+
+    header { background:#1A6B2F; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; }
+    header .user span:first-child { font-size:11px; color:#9FE1CB; }
+    header .user span:last-child { font-size:15px; font-weight:700; color:#fff; display:block; }
+    .badge-disp { background:#F5D800; border-radius:20px; padding:5px 12px; display:flex; align-items:center; gap:6px; cursor:pointer; }
+    .badge-disp .dot { width:8px; height:8px; border-radius:50%; background:#1A6B2F; }
+    .badge-disp span { font-size:11px; font-weight:700; color:#1A6B2F; }
+    .badge-disp.ocupado { background:#E24B4A; }
+    .badge-disp.ocupado .dot { background:#fff; }
+    .badge-disp.ocupado span { color:#fff; }
+
+    #map { height:55vw; max-height:260px; width:100%; }
+
+    .panel { background:#fff; border-radius:20px 20px 0 0; margin-top:-12px; padding:18px 18px 32px; }
+
+    .solicitud-card { background:#EAF3DE; border:1.5px solid #97C459; border-radius:14px; padding:14px 16px; margin-bottom:14px; animation: slideIn 0.3s ease; }
+    @keyframes slideIn { from { transform:translateY(20px); opacity:0; } to { transform:translateY(0); opacity:1; } }
+    .sol-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+    .sol-icon { width:38px; height:38px; border-radius:50%; background:#1A6B2F; display:flex; align-items:center; justify-content:center; color:#F5D800; font-size:18px; }
+    .sol-title { font-size:13px; font-weight:700; color:#1A6B2F; }
+    .sol-time { font-size:11px; color:#3B6D11; }
+
+    .ruta-item { display:flex; gap:10px; align-items:flex-start; margin-bottom:10px; }
+    .ruta-item .ico { font-size:16px; margin-top:2px; }
+    .ruta-item .info .lbl { font-size:10px; color:#888780; }
+    .ruta-item .info .val { font-size:13px; font-weight:600; color:#2C2C2A; }
+
+    .stats-row { display:flex; gap:8px; margin-bottom:14px; }
+    .stat { flex:1; background:#fff; border-radius:10px; padding:8px; text-align:center; border:1px solid #D3D1C7; }
+    .stat .val { font-size:16px; font-weight:700; color:#1A6B2F; }
+    .stat .lbl { font-size:10px; color:#3B6D11; }
+
+    .btn-row { display:flex; gap:10px; }
+    .btn-rechazar { flex:1; padding:13px; background:#fff; color:#E24B4A; border:1.5px solid #E24B4A; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; }
+    .btn-aceptar { flex:1; padding:13px; background:#1A6B2F; color:#fff; border:none; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; }
+
+    .no-solicitudes { text-align:center; padding:30px 0; color:#888780; font-size:14px; }
+    .no-solicitudes .icon { font-size:40px; margin-bottom:10px; }
+
+    .ranking-card { background:#EAF3DE; border-radius:14px; padding:16px; text-align:center; }
+    .ranking-card .score { font-size:44px; font-weight:800; color:#1A6B2F; line-height:1; }
+    .ranking-card .stars { color:#F5D800; font-size:22px; margin:6px 0; }
+    .ranking-card .carreras { font-size:12px; color:#3B6D11; }
+    .ranking-card .tendencia { font-size:12px; color:#639922; font-weight:600; margin-top:6px; }
+
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1A6B2F; color:#fff; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:200; display:none; }
+    .toast.show { display:block; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="user">
+    <span>Mototaxista</span>
+    <span id="user-name">Cargando...</span>
+  </div>
+  <div class="badge-disp" id="toggle-disp" onclick="toggleDisponible()">
+    <div class="dot"></div>
+    <span id="estado-texto">Disponible</span>
+  </div>
+</header>
+
+<div id="map"></div>
+
+<div class="panel">
+  <div id="lista-solicitudes">
+    <div class="no-solicitudes">
+      <div class="icon">🏍️</div>
+      <div>Esperando solicitudes...</div>
+      <div style="font-size:12px;margin-top:6px;color:#B4B2A9;">Asegúrate de estar disponible</div>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <div style="font-size:13px;font-weight:700;color:#2C2C2A;margin-bottom:10px;">Tu ranking</div>
+    <div class="ranking-card">
+      <div class="score" id="score">4.3</div>
+      <div class="stars" id="stars-display">★★★★☆</div>
+      <div class="carreras" id="carreras-count">47 carreras completadas</div>
+      <div class="tendencia" id="tendencia">↑ Subiste +0.2 esta semana</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script type="module">
+  import { auth, db } from './js/firebase-config.js';
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { collection, query, where, onSnapshot, doc, updateDoc, getDoc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  let map, myMarker, disponible = true, userId, userName;
+  let watchId;
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = 'index.html'; return; }
+    userId = user.uid;
+    userName = user.displayName || user.email;
+    document.getElementById('user-name').textContent = userName;
+    await registrarMototaxista(user);
+    initMap();
+    escucharSolicitudes();
+    cargarRanking();
+  });
+
+  async function registrarMototaxista(user) {
+    const ref = doc(db, 'mototaxistas', user.uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        nombre: user.displayName || user.email,
+        email: user.email,
+        disponible: true,
+        ranking: 4.3,
+        carreras: 0,
+        lat: 10.1628, lng: -74.7277,
+        createdAt: serverTimestamp()
+      });
+    }
+  }
+
+  function initMap() {
+    map = L.map('map').setView([10.1628, -74.7277], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OSM' }).addTo(map);
+    watchId = navigator.geolocation.watchPosition(async pos => {
+      const lat = pos.coords.latitude, lng = pos.coords.longitude;
+      map.setView([lat, lng], 16);
+      if (myMarker) myMarker.setLatLng([lat, lng]);
+      else { const icon = L.divIcon({html:'🏍️',className:'',iconSize:[28,28]}); myMarker = L.marker([lat,lng],{icon}).addTo(map); }
+      await updateDoc(doc(db,'mototaxistas',userId), {lat, lng});
+    });
+  }
+
+  function escucharSolicitudes() {
+    const q = query(collection(db,'carreras'), where('estado','==','buscando'));
+    onSnapshot(q, snap => {
+      const lista = document.getElementById('lista-solicitudes');
+      if (snap.empty) {
+        lista.innerHTML = '<div class="no-solicitudes"><div class="icon">🏍️</div><div>Esperando solicitudes...</div><div style="font-size:12px;margin-top:6px;color:#B4B2A9;">Asegúrate de estar disponible</div></div>';
+        return;
+      }
+      lista.innerHTML = '';
+      snap.forEach(docSnap => {
+        const d = docSnap.data();
+        const card = document.createElement('div');
+        card.className = 'solicitud-card';
+        card.innerHTML = `
+          <div class="sol-header">
+            <div class="sol-icon">🔔</div>
+            <div>
+              <div class="sol-title">Nueva solicitud</div>
+              <div class="sol-time">${d.clienteNombre} • ahora</div>
+            </div>
+          </div>
+          <div class="ruta-item">
+            <div class="ico">📍</div>
+            <div class="info"><div class="lbl">Recoge en</div><div class="val">${d.origen||'Ubicación del cliente'}</div></div>
+          </div>
+          <div class="ruta-item">
+            <div class="ico">🏁</div>
+            <div class="info"><div class="lbl">Destino</div><div class="val">${d.destino}</div></div>
+          </div>
+          <div class="stats-row">
+            <div class="stat"><div class="val">$${(d.precio||3500).toLocaleString()}</div><div class="lbl">Ganancia</div></div>
+            <div class="stat"><div class="val">1.2 km</div><div class="lbl">Distancia</div></div>
+            <div class="stat"><div class="val">2 min</div><div class="lbl">Al cliente</div></div>
+          </div>
+          <div class="btn-row">
+            <button class="btn-rechazar" onclick="rechazar('${docSnap.id}')">✕ Rechazar</button>
+            <button class="btn-aceptar" onclick="aceptar('${docSnap.id}', '${d.clienteId}')">✓ Aceptar</button>
+          </div>`;
+        lista.appendChild(card);
+      });
+    });
+  }
+
+  window.aceptar = async (carreraId, clienteId) => {
+    await updateDoc(doc(db,'carreras',carreraId), {
+      estado: 'aceptada',
+      mototaxistaId: userId,
+      mototaxistaNombre: userName,
+      aceptadaAt: serverTimestamp()
+    });
+    await updateDoc(doc(db,'mototaxistas',userId), { disponible: false });
+    mostrarToast('¡Carrera aceptada!');
+    window.location.href = 'carrera.html?id=' + carreraId + '&rol=mototaxista';
+  };
+
+  window.rechazar = (id) => mostrarToast('Solicitud ignorada');
+
+  window.toggleDisponible = async () => {
+    disponible = !disponible;
+    await updateDoc(doc(db,'mototaxistas',userId), { disponible });
+    const badge = document.getElementById('toggle-disp');
+    badge.classList.toggle('ocupado', !disponible);
+    document.getElementById('estado-texto').textContent = disponible ? 'Disponible' : 'Ocupado';
+  };
+
+  async function cargarRanking() {
+    const snap = await getDoc(doc(db,'mototaxistas',userId));
+    if (snap.exists()) {
+      const d = snap.data();
+      const r = d.ranking || 4.3;
+      document.getElementById('score').textContent = r.toFixed(1);
+      const full = Math.floor(r), half = r%1>=0.5;
+      let stars = '★'.repeat(full) + (half?'½':'') + '☆'.repeat(5-full-(half?1:0));
+      document.getElementById('stars-display').textContent = stars;
+      document.getElementById('carreras-count').textContent = (d.carreras||0) + ' carreras completadas';
+    }
+  }
+
+  function mostrarToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
