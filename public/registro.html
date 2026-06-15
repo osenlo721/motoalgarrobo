@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#1A6B2F"/>
+  <title>MotoAlgarrobo - Registro</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',sans-serif; background:#1A6B2F; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px; }
+    .logo-wrap { text-align:center; margin-bottom:24px; }
+    .logo-wrap .brand { font-size:28px; font-weight:800; color:#F5D800; letter-spacing:2px; font-family:Georgia,serif; }
+    .logo-wrap .sub { font-size:12px; color:#fff; letter-spacing:6px; font-family:Georgia,serif; }
+    .card { background:#fff; border-radius:24px; padding:28px 24px 32px; width:100%; max-width:340px; }
+    .card h2 { font-size:16px; font-weight:700; color:#1A6B2F; text-align:center; margin-bottom:20px; }
+    label { font-size:12px; color:#5F5E5A; display:block; margin-bottom:4px; }
+    input, select { width:100%; padding:11px 14px; border-radius:10px; border:1.5px solid #D3D1C7; font-size:14px; background:#F1EFE8; color:#2C2C2A; margin-bottom:14px; outline:none; }
+    input:focus, select:focus { border-color:#1A6B2F; }
+    .btn-main { width:100%; padding:13px; background:#1A6B2F; color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px; }
+    .btn-main:active { opacity:0.85; }
+    .error { color:#E24B4A; font-size:12px; text-align:center; margin-bottom:10px; display:none; }
+    .link-row { text-align:center; margin-top:14px; font-size:12px; color:#5F5E5A; }
+    .link-row a { color:#1A6B2F; font-weight:700; text-decoration:none; }
+    .rol-btns { display:flex; gap:10px; margin-bottom:16px; }
+    .rol-btn { flex:1; padding:10px; border-radius:10px; border:1.5px solid #D3D1C7; background:#F1EFE8; color:#5F5E5A; font-size:13px; cursor:pointer; text-align:center; }
+    .rol-btn.active { border-color:#1A6B2F; background:#EAF3DE; color:#1A6B2F; font-weight:700; }
+  </style>
+</head>
+<body>
+  <div class="logo-wrap">
+    <div class="brand">MOTO</div>
+    <div class="sub">ALGARROBO</div>
+  </div>
+
+  <div class="card">
+    <h2>Crear cuenta</h2>
+    <div class="error" id="error-msg"></div>
+
+    <label>Soy</label>
+    <div class="rol-btns">
+      <div class="rol-btn active" id="btn-cliente" onclick="setRol('cliente')">🙋 Cliente</div>
+      <div class="rol-btn" id="btn-mototaxista" onclick="setRol('mototaxista')">🏍️ Mototaxista</div>
+    </div>
+
+    <label>Nombre completo</label>
+    <input type="text" id="nombre" placeholder="Tu nombre"/>
+
+    <label>Correo electrónico</label>
+    <input type="email" id="email" placeholder="tucorreo@gmail.com"/>
+
+    <label>Contraseña</label>
+    <input type="password" id="password" placeholder="Mínimo 6 caracteres"/>
+
+    <div id="campo-placa" style="display:none;">
+      <label>Placa de la moto</label>
+      <input type="text" id="placa" placeholder="Ej: ABC123"/>
+    </div>
+
+    <button class="btn-main" onclick="registrar()">Crear cuenta</button>
+
+    <div class="link-row">¿Ya tienes cuenta? <a href="index.html">Inicia sesión</a></div>
+  </div>
+
+  <script type="module">
+    import { auth, db } from './js/firebase-config.js';
+    import { createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import { doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    let rol = 'cliente';
+
+    window.setRol = (r) => {
+      rol = r;
+      document.getElementById('btn-cliente').classList.toggle('active', r === 'cliente');
+      document.getElementById('btn-mototaxista').classList.toggle('active', r === 'mototaxista');
+      document.getElementById('campo-placa').style.display = r === 'mototaxista' ? 'block' : 'none';
+    };
+
+    window.registrar = async () => {
+      const nombre = document.getElementById('nombre').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const placa = document.getElementById('placa').value.trim();
+      const err = document.getElementById('error-msg');
+      err.style.display = 'none';
+
+      if (!nombre || !email || !password) {
+        err.textContent = 'Completa todos los campos';
+        err.style.display = 'block';
+        return;
+      }
+      if (rol === 'mototaxista' && !placa) {
+        err.textContent = 'Ingresa la placa de tu moto';
+        err.style.display = 'block';
+        return;
+      }
+
+      try {
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await updateProfile(cred.user, { displayName: nombre });
+
+        if (rol === 'mototaxista') {
+          await setDoc(doc(db, 'mototaxistas', cred.user.uid), {
+            nombre, email, placa, disponible: true,
+            ranking: 5.0, carreras: 0,
+            lat: 10.1628, lng: -74.7277,
+            createdAt: serverTimestamp()
+          });
+          window.location.href = 'mototaxista.html';
+        } else {
+          window.location.href = 'cliente.html';
+        }
+      } catch(e) {
+        const msgs = {
+          'auth/email-already-in-use': 'Este correo ya está registrado',
+          'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres',
+          'auth/invalid-email': 'Correo inválido'
+        };
+        err.textContent = msgs[e.code] || 'Error al registrar';
+        err.style.display = 'block';
+      }
+    };
+  </script>
+</body>
+</html>
