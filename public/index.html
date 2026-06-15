@@ -10,34 +10,26 @@
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: 'Segoe UI', sans-serif; background:#1A6B2F; min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; }
-
     .logo-wrap { text-align:center; margin-bottom:32px; }
     .logo-wrap svg { display:block; margin:0 auto 12px; }
     .logo-wrap .brand { font-size:32px; font-weight:800; color:#F5D800; letter-spacing:2px; font-family:Georgia,serif; }
     .logo-wrap .sub { font-size:14px; color:#fff; letter-spacing:6px; font-family:Georgia,serif; }
-
     .card { background:#fff; border-radius:24px; padding:28px 24px 32px; width:90%; max-width:340px; }
     .card p { font-size:13px; color:#5F5E5A; text-align:center; margin-bottom:20px; }
-
     label { font-size:12px; color:#5F5E5A; display:block; margin-bottom:4px; }
     input { width:100%; padding:11px 14px; border-radius:10px; border:1.5px solid #D3D1C7; font-size:14px; background:#F1EFE8; color:#2C2C2A; margin-bottom:14px; outline:none; }
     input:focus { border-color:#1A6B2F; }
-
     .btn-main { width:100%; padding:13px; background:#1A6B2F; color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px; }
     .btn-main:active { opacity:0.85; }
     .btn-google { width:100%; padding:11px; background:#fff; color:#2C2C2A; border:1.5px solid #D3D1C7; border-radius:12px; font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; }
     .btn-google:active { background:#F1EFE8; }
-
     .divider { display:flex; align-items:center; gap:10px; margin:14px 0; }
     .divider span { font-size:12px; color:#888780; }
     .divider::before,.divider::after { content:''; flex:1; height:1px; background:#D3D1C7; }
-
     .link-row { text-align:center; margin-top:14px; font-size:12px; color:#5F5E5A; }
     .link-row a { color:#1A6B2F; font-weight:700; text-decoration:none; }
-
     .moto-link { text-align:center; margin-top:12px; font-size:12px; }
     .moto-link a { color:#1A6B2F; font-weight:700; text-decoration:none; }
-
     .error { color:#E24B4A; font-size:12px; text-align:center; margin-bottom:10px; display:none; }
     .loading { opacity:0.6; pointer-events:none; }
   </style>
@@ -95,21 +87,16 @@
       signInWithEmailAndPassword,
       GoogleAuthProvider,
       signInWithPopup,
-      signInWithRedirect,
-      getRedirectResult,
       onAuthStateChanged
     } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    // Detectar si es móvil
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    // Manejar resultado de redirect (escritorio)
-    getRedirectResult(auth).then(result => {
-      if (result?.user) window.location.href = 'cliente.html';
-    }).catch(e => console.error(e));
-
+    // Solo redirigir si ya hay sesión activa
+    let redirected = false;
     onAuthStateChanged(auth, user => {
-      if (user) window.location.href = 'cliente.html';
+      if (user && !redirected) {
+        redirected = true;
+        window.location.href = 'cliente.html';
+      }
     });
 
     window.loginEmail = async () => {
@@ -132,15 +119,12 @@
     window.loginGoogle = async () => {
       const provider = new GoogleAuthProvider();
       try {
-        if (isMobile) {
-          // Móvil: popup
-          await signInWithPopup(auth, provider);
-        } else {
-          // Escritorio: redirect (evita el loop de popup bloqueado)
-          await signInWithRedirect(auth, provider);
-        }
+        await signInWithPopup(auth, provider);
       } catch(e) {
-        console.error(e);
+        console.error(e.code, e.message);
+        const err = document.getElementById('error-msg');
+        err.textContent = 'Error con Google: ' + e.code;
+        err.style.display = 'block';
       }
     };
   </script>
