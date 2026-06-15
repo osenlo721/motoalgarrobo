@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="theme-color" content="#1A6B2F"/>
+  <title>MotoAlgarrobo - Mi Perfil</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body { font-family:'Segoe UI',sans-serif; background:#F1EFE8; }
+    header { background:#1A6B2F; padding:14px 18px; display:flex; align-items:center; gap:12px; }
+    header a { color:#fff; font-size:20px; text-decoration:none; }
+    header span { font-size:15px; font-weight:700; color:#fff; }
+    .panel { padding:18px; }
+    .avatar-wrap { text-align:center; padding:24px 0 16px; }
+    .avatar { width:80px; height:80px; border-radius:50%; background:#1A6B2F; display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:700; color:#F5D800; margin:0 auto 10px; }
+    .nombre { font-size:18px; font-weight:700; color:#1A6B2F; }
+    .email { font-size:13px; color:#5F5E5A; margin-top:4px; }
+    .ranking-card { background:#EAF3DE; border-radius:14px; padding:14px 16px; text-align:center; margin:16px 0; display:flex; justify-content:space-around; }
+    .ranking-card .item { text-align:center; }
+    .ranking-card .val { font-size:24px; font-weight:800; color:#1A6B2F; }
+    .ranking-card .lbl { font-size:11px; color:#3B6D11; margin-top:2px; }
+    .section { background:#fff; border-radius:14px; padding:16px; margin-bottom:14px; }
+    .section h3 { font-size:13px; font-weight:700; color:#1A6B2F; margin-bottom:14px; }
+    label { font-size:12px; color:#5F5E5A; display:block; margin-bottom:4px; }
+    input { width:100%; padding:11px 14px; border-radius:10px; border:1.5px solid #D3D1C7; font-size:14px; background:#F1EFE8; color:#2C2C2A; margin-bottom:14px; outline:none; }
+    input:focus { border-color:#1A6B2F; }
+    .tarifa-wrap { display:flex; align-items:center; gap:8px; margin-bottom:14px; }
+    .tarifa-prefix { font-size:20px; font-weight:700; color:#1A6B2F; }
+    .tarifa-wrap input { margin-bottom:0; font-size:20px; font-weight:700; color:#1A6B2F; }
+    .btn-save { width:100%; padding:13px; background:#1A6B2F; color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; }
+    .btn-cerrar { width:100%; padding:12px; background:#fff; color:#E24B4A; border:1.5px solid #E24B4A; border-radius:12px; font-size:14px; cursor:pointer; margin-top:10px; }
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1A6B2F; color:#fff; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:200; display:none; }
+    .toast.show { display:block; }
+    .disponible-row { display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; }
+    .disponible-row span { font-size:13px; color:#2C2C2A; font-weight:600; }
+    .toggle { width:44px; height:24px; background:#D3D1C7; border-radius:12px; position:relative; cursor:pointer; transition:background 0.2s; }
+    .toggle.on { background:#1A6B2F; }
+    .toggle::after { content:''; position:absolute; width:20px; height:20px; background:#fff; border-radius:50%; top:2px; left:2px; transition:left 0.2s; }
+    .toggle.on::after { left:22px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="mototaxista.html">←</a>
+  <span>Mi Perfil</span>
+</header>
+
+<div class="panel">
+  <div class="avatar-wrap">
+    <div class="avatar" id="avatar">--</div>
+    <div class="nombre" id="nombre-display">Cargando...</div>
+    <div class="email" id="email-display"></div>
+  </div>
+
+  <div class="ranking-card">
+    <div class="item">
+      <div class="val" id="ranking-val">5.0</div>
+      <div class="lbl">⭐ Ranking</div>
+    </div>
+    <div class="item">
+      <div class="val" id="carreras-val">0</div>
+      <div class="lbl">🏍️ Carreras</div>
+    </div>
+    <div class="item">
+      <div class="val" id="tarifa-display">$0</div>
+      <div class="lbl">💰 Mi tarifa</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h3>Configuración</h3>
+
+    <div class="disponible-row">
+      <span>Disponible para carreras</span>
+      <div class="toggle" id="toggle-disp" onclick="toggleDisponible()"></div>
+    </div>
+
+    <label>Mi tarifa base (COP)</label>
+    <div class="tarifa-wrap">
+      <span class="tarifa-prefix">$</span>
+      <input type="number" id="tarifa" placeholder="3500" min="1000" step="500"/>
+    </div>
+
+    <label>Placa de la moto</label>
+    <input type="text" id="placa" placeholder="Ej: ABC123"/>
+
+    <label>Modelo de la moto</label>
+    <input type="text" id="modelo" placeholder="Ej: Honda CB110"/>
+
+    <button class="btn-save" onclick="guardar()">Guardar cambios</button>
+  </div>
+
+  <button class="btn-cerrar" onclick="cerrarSesion()">Cerrar sesión</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+  import { auth, db } from './js/firebase-config.js';
+  import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+  import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+  let userId, disponible = true;
+
+  onAuthStateChanged(auth, async user => {
+    if (!user) { location.href = 'index.html'; return; }
+    userId = user.uid;
+    const initials = (user.displayName || user.email).slice(0,2).toUpperCase();
+    document.getElementById('avatar').textContent = initials;
+    document.getElementById('nombre-display').textContent = user.displayName || user.email;
+    document.getElementById('email-display').textContent = user.email;
+
+    const snap = await getDoc(doc(db, 'mototaxistas', userId));
+    if (snap.exists()) {
+      const d = snap.data();
+      document.getElementById('ranking-val').textContent = (d.ranking||5).toFixed(1);
+      document.getElementById('carreras-val').textContent = d.carreras || 0;
+      document.getElementById('tarifa').value = d.tarifa || 3500;
+      document.getElementById('tarifa-display').textContent = '$' + (d.tarifa||3500).toLocaleString();
+      document.getElementById('placa').value = d.placa || '';
+      document.getElementById('modelo').value = d.modelo || '';
+      disponible = d.disponible !== false;
+      document.getElementById('toggle-disp').classList.toggle('on', disponible);
+    }
+  });
+
+  window.toggleDisponible = () => {
+    disponible = !disponible;
+    document.getElementById('toggle-disp').classList.toggle('on', disponible);
+  };
+
+  window.guardar = async () => {
+    const tarifa = parseInt(document.getElementById('tarifa').value) || 3500;
+    const placa = document.getElementById('placa').value.trim();
+    const modelo = document.getElementById('modelo').value.trim();
+    await updateDoc(doc(db, 'mototaxistas', userId), { tarifa, placa, modelo, disponible });
+    document.getElementById('tarifa-display').textContent = '$' + tarifa.toLocaleString();
+    mostrarToast('¡Cambios guardados!');
+  };
+
+  window.cerrarSesion = async () => {
+    await signOut(auth);
+    location.href = 'index.html';
+  };
+
+  function mostrarToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+</script>
+</body>
+</html>
