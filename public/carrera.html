@@ -8,123 +8,231 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
   <style>
     * { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family:'Segoe UI',sans-serif; background:#F1EFE8; }
-    header { background:#1A6B2F; padding:14px 18px; display:flex; align-items:center; justify-content:space-between; }
-    header span:first-child { font-size:11px; color:#9FE1CB; display:block; }
-    header span:last-child { font-size:15px; font-weight:700; color:#fff; display:block; }
-    .badge { background:#F5D800; border-radius:20px; padding:5px 12px; font-size:11px; font-weight:700; color:#1A6B2F; }
-    #map { height:50vw; max-height:240px; width:100%; }
-    .panel { background:#fff; border-radius:20px 20px 0 0; margin-top:-12px; padding:18px 18px 32px; }
+    body { font-family:'Segoe UI',sans-serif; background:#F1EFE8; min-height:100vh; }
 
-    .conductor-card { background:#EAF3DE; border-radius:12px; padding:12px 14px; display:flex; align-items:center; gap:12px; margin-bottom:14px; }
-    .cond-avatar { width:44px; height:44px; border-radius:50%; background:#1A6B2F; display:flex; align-items:center; justify-content:center; font-weight:700; color:#F5D800; font-size:14px; flex-shrink:0; }
-    .cond-info { flex:1; }
-    .cond-info .name { font-size:14px; font-weight:700; color:#1A6B2F; }
-    .cond-info .placa { font-size:12px; color:#3B6D11; }
-    .cond-info .stars { color:#F5D800; font-size:13px; }
-    .btn-call { width:40px; height:40px; border-radius:50%; background:#1A6B2F; display:flex; align-items:center; justify-content:center; font-size:20px; text-decoration:none; border:none; cursor:pointer; }
+    /* HEADER dinámico por rol */
+    header {
+      padding:14px 18px;
+      display:flex; align-items:center; justify-content:space-between;
+      background:#1A6B2F;
+      transition: background .4s;
+    }
+    header.moto-header { background:#1A1A1A; }
+    header .info span:first-child { font-size:11px; color:#9FE1CB; display:block; }
+    header.moto-header .info span:first-child { color:#888; }
+    header .info span:last-child { font-size:15px; font-weight:700; color:#fff; display:block; }
+    .estado-badge {
+      padding:5px 12px; border-radius:20px; font-size:11px; font-weight:700;
+      background:#F5D800; color:#1A1A1A;
+    }
 
-    .progreso { margin-bottom:14px; }
-    .prog-labels { display:flex; justify-content:space-between; font-size:11px; color:#5F5E5A; margin-bottom:6px; }
-    .prog-bar { height:6px; background:#D3D1C7; border-radius:10px; overflow:hidden; }
-    .prog-fill { height:100%; background:#1A6B2F; border-radius:10px; transition:width 0.5s; }
-    .prog-pct { font-size:11px; color:#3B6D11; text-align:center; margin-top:4px; }
+    #map { height:48vw; max-height:230px; width:100%; }
 
-    .stats-row { display:flex; gap:10px; margin-bottom:16px; }
+    .panel {
+      background:#fff; border-radius:20px 20px 0 0;
+      margin-top:-12px; padding:18px 16px 40px;
+      position:relative; z-index:10;
+    }
+
+    /* Timeline de estados */
+    .timeline {
+      display:flex; align-items:center; justify-content:space-between;
+      margin-bottom:18px; padding:0 4px;
+    }
+    .tl-step { display:flex; flex-direction:column; align-items:center; gap:4px; flex:1; }
+    .tl-dot {
+      width:28px; height:28px; border-radius:50%;
+      background:#D3D1C7; display:flex; align-items:center; justify-content:center;
+      font-size:13px; transition:.3s;
+    }
+    .tl-dot.done { background:#1A6B2F; }
+    .tl-dot.active { background:#F5D800; box-shadow:0 0 0 4px rgba(245,216,0,.25); }
+    .tl-lbl { font-size:9px; color:#888; text-align:center; font-weight:600; }
+    .tl-line { flex:1; height:2px; background:#D3D1C7; margin-bottom:14px; transition:.3s; }
+    .tl-line.done { background:#1A6B2F; }
+
+    /* Card persona */
+    .persona-card {
+      background:#EAF3DE; border-radius:14px; padding:14px 16px;
+      display:flex; align-items:center; gap:12px; margin-bottom:14px;
+    }
+    .per-avatar {
+      width:46px; height:46px; border-radius:50%;
+      background:#1A6B2F; color:#F5D800;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:800; font-size:16px; flex-shrink:0;
+    }
+    .per-nombre { font-size:15px; font-weight:700; color:#1A6B2F; }
+    .per-sub { font-size:12px; color:#3B6D11; margin-top:2px; }
+    .per-stars { color:#F5D800; font-size:13px; margin-top:3px; }
+    .btn-call {
+      margin-left:auto; width:40px; height:40px; border-radius:50%;
+      background:#1A6B2F; border:none; cursor:pointer;
+      display:flex; align-items:center; justify-content:center; font-size:18px;
+      text-decoration:none;
+    }
+
+    /* Ruta */
+    .ruta-box {
+      background:#F8F7F3; border-radius:12px; padding:12px 14px; margin-bottom:14px;
+    }
+    .ruta-row { display:flex; align-items:flex-start; gap:10px; margin-bottom:8px; }
+    .ruta-row:last-child { margin-bottom:0; }
+    .ruta-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; margin-top:4px; }
+    .ruta-dot.o { background:#4ADE80; }
+    .ruta-dot.d { background:#F5D800; border:2px solid #1A6B2F; }
+    .ruta-lbl { font-size:10px; color:#888; }
+    .ruta-val { font-size:13px; font-weight:600; color:#2C2C2A; }
+    .ruta-sep { width:1px; height:16px; background:#D3D1C7; margin-left:4px; margin-top:-4px; margin-bottom:4px; }
+
+    /* Stats */
+    .stats-row { display:flex; gap:8px; margin-bottom:16px; }
     .stat { flex:1; background:#EAF3DE; border-radius:10px; padding:10px; text-align:center; }
-    .stat .val { font-size:16px; font-weight:700; color:#1A6B2F; }
-    .stat .lbl { font-size:10px; color:#3B6D11; }
+    .stat .v { font-size:16px; font-weight:700; color:#1A6B2F; }
+    .stat .l { font-size:10px; color:#3B6D11; margin-top:2px; }
 
-    .btn-confirmar { width:100%; padding:14px; background:#1A6B2F; color:#fff; border:none; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; margin-bottom:10px; }
-    .btn-cancelar { width:100%; padding:12px; background:#fff; color:#E24B4A; border:1.5px solid #E24B4A; border-radius:12px; font-size:14px; cursor:pointer; }
+    /* Bloque de acción principal — cambia por estado */
+    .accion-block { margin-bottom:12px; }
+    .accion-msg {
+      background:#EAF3DE; border-radius:12px; padding:14px 16px;
+      font-size:13px; color:#1A6B2F; font-weight:600;
+      text-align:center; margin-bottom:12px; display:none;
+    }
+    .accion-msg.show { display:block; }
+
+    .btn-accion {
+      width:100%; padding:15px; border:none; border-radius:14px;
+      font-size:15px; font-weight:800; cursor:pointer;
+      background:#1A6B2F; color:#fff; margin-bottom:10px;
+      transition:.2s;
+    }
+    .btn-accion:active { opacity:.85; }
+    .btn-accion:disabled { background:#B4B2A9; cursor:not-allowed; }
+    .btn-accion.amarillo { background:#F5D800; color:#1A1A1A; }
+
+    .btn-cancelar {
+      width:100%; padding:12px; background:#fff;
+      color:#E24B4A; border:1.5px solid #E24B4A;
+      border-radius:12px; font-size:14px; cursor:pointer;
+    }
 
     /* Calificación */
-    .calif-section { display:none; }
-    .calif-section.show { display:block; }
-    .stars-input { display:flex; justify-content:center; gap:8px; margin:14px 0; }
-    .stars-input span { font-size:40px; cursor:pointer; color:#D3D1C7; transition:color 0.15s; }
-    .stars-input span.active { color:#F5D800; }
-    .star-label { text-align:center; font-size:14px; color:#888780; margin-bottom:14px; }
-    textarea { width:100%; padding:10px 12px; border-radius:10px; border:1.5px solid #D3D1C7; font-size:13px; background:#F1EFE8; resize:none; height:70px; margin-bottom:14px; outline:none; }
+    .calif-block { display:none; }
+    .calif-block.show { display:block; }
+    .calif-titulo { font-size:18px; font-weight:800; color:#1A6B2F; text-align:center; margin-bottom:4px; }
+    .calif-sub { font-size:13px; color:#888; text-align:center; margin-bottom:18px; }
+    .stars-row { display:flex; justify-content:center; gap:10px; margin-bottom:6px; }
+    .stars-row span { font-size:42px; cursor:pointer; color:#D3D1C7; transition:.15s; }
+    .stars-row span.on { color:#F5D800; }
+    .star-lbl { text-align:center; font-size:13px; color:#888; margin-bottom:14px; height:18px; }
+    textarea {
+      width:100%; padding:10px 12px; border-radius:10px;
+      border:1.5px solid #D3D1C7; font-size:13px;
+      background:#F1EFE8; resize:none; height:68px;
+      margin-bottom:14px; outline:none; font-family:inherit;
+    }
     textarea:focus { border-color:#1A6B2F; }
-    .ranking-update { background:#EAF3DE; border-radius:14px; padding:16px; text-align:center; margin-bottom:16px; }
-    .ranking-update .score-big { font-size:48px; font-weight:800; color:#1A6B2F; }
-    .ranking-update .trend { font-size:12px; color:#639922; font-weight:600; margin-top:6px; }
 
-    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1A6B2F; color:#fff; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:200; display:none; }
+    /* Toast */
+    .toast {
+      position:fixed; bottom:24px; left:50%; transform:translateX(-50%);
+      background:#1A6B2F; color:#fff; padding:10px 22px;
+      border-radius:20px; font-size:13px; font-weight:700;
+      z-index:300; display:none; text-align:center; max-width:90%;
+    }
     .toast.show { display:block; }
+    .toast.amarillo { background:#F5D800; color:#1A1A1A; }
   </style>
 </head>
 <body>
 
-<header>
-  <div>
+<header id="header">
+  <div class="info">
     <span id="header-sub">Carrera en curso</span>
     <span id="header-nombre">Cargando...</span>
   </div>
-  <div class="badge" id="estado-badge">En camino</div>
+  <div class="estado-badge" id="estado-badge">...</div>
 </header>
 
 <div id="map"></div>
 
 <div class="panel">
 
-  <!-- Info conductor/cliente -->
-  <div class="conductor-card">
-    <div class="cond-avatar" id="cond-avatar">JP</div>
-    <div class="cond-info">
-      <div class="name" id="cond-nombre">Juan Pérez</div>
-      <div class="placa" id="cond-placa">Honda CB110 • ABC 123</div>
-      <div class="stars">★★★★☆ <span style="font-size:12px;color:#5F5E5A;">4.3</span></div>
+  <!-- Timeline -->
+  <div class="timeline">
+    <div class="tl-step">
+      <div class="tl-dot done" id="tl1">✓</div>
+      <div class="tl-lbl">Aceptada</div>
     </div>
-    <a class="btn-call" href="tel:3001234567">📞</a>
+    <div class="tl-line" id="tl-line1"></div>
+    <div class="tl-step">
+      <div class="tl-dot" id="tl2">🏍️</div>
+      <div class="tl-lbl">En camino</div>
+    </div>
+    <div class="tl-line" id="tl-line2"></div>
+    <div class="tl-step">
+      <div class="tl-dot" id="tl3">👤</div>
+      <div class="tl-lbl">Recogido</div>
+    </div>
+    <div class="tl-line" id="tl-line3"></div>
+    <div class="tl-step">
+      <div class="tl-dot" id="tl4">🏁</div>
+      <div class="tl-lbl">Finalizada</div>
+    </div>
   </div>
 
-  <!-- Progreso -->
-  <div class="progreso">
-    <div class="prog-labels"><span id="prog-origen">Origen</span><span id="prog-destino">Destino</span></div>
-    <div class="prog-bar"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
-    <div class="prog-pct" id="prog-pct">0% del recorrido</div>
+  <!-- Card persona -->
+  <div class="persona-card">
+    <div class="per-avatar" id="per-avatar">--</div>
+    <div>
+      <div class="per-nombre" id="per-nombre">Cargando...</div>
+      <div class="per-sub" id="per-sub">--</div>
+      <div class="per-stars" id="per-stars">★★★★☆</div>
+    </div>
+    <a class="btn-call" id="btn-call" href="#">📞</a>
+  </div>
+
+  <!-- Ruta -->
+  <div class="ruta-box" id="ruta-box">
+    <div class="ruta-row">
+      <div class="ruta-dot o"></div>
+      <div><div class="ruta-lbl">Origen</div><div class="ruta-val" id="ruta-origen">--</div></div>
+    </div>
+    <div class="ruta-sep" style="margin-left:4px;"></div>
+    <div class="ruta-row">
+      <div class="ruta-dot d"></div>
+      <div><div class="ruta-lbl">Destino</div><div class="ruta-val" id="ruta-destino">--</div></div>
+    </div>
   </div>
 
   <!-- Stats -->
   <div class="stats-row">
-    <div class="stat"><div class="val" id="stat-precio">$3.500</div><div class="lbl">Valor</div></div>
-    <div class="stat"><div class="val" id="stat-dist">1.2 km</div><div class="lbl">Distancia</div></div>
-    <div class="stat"><div class="val" id="stat-tiempo">-- min</div><div class="lbl">Restante</div></div>
+    <div class="stat"><div class="v" id="stat-precio">$--</div><div class="l">Valor</div></div>
+    <div class="stat"><div class="v" id="stat-pas">--</div><div class="l">Pasajeros</div></div>
+    <div class="stat"><div class="v" id="stat-tiempo">-- min</div><div class="l">Restante</div></div>
   </div>
 
-  <!-- Botones según estado y rol -->
-  <div id="acciones">
-    <button class="btn-confirmar" id="btn-accion" onclick="accionPrincipal()">Llegué al destino</button>
-    <button class="btn-cancelar" onclick="cancelarCarrera()">Cancelar carrera</button>
+  <!-- Bloque de acción (cambia según estado y rol) -->
+  <div class="accion-block" id="accion-block">
+    <div class="accion-msg" id="accion-msg"></div>
+    <button class="btn-accion" id="btn-accion" onclick="accionPrincipal()">...</button>
+    <button class="btn-cancelar" id="btn-cancelar" onclick="cancelarCarrera()">Cancelar carrera</button>
   </div>
 
   <!-- Calificación -->
-  <div class="calif-section" id="calif-section">
-    <div style="font-size:15px;font-weight:700;color:#1A6B2F;text-align:center;margin-bottom:6px;">¡Carrera completada!</div>
-    <p style="font-size:13px;color:#5F5E5A;text-align:center;margin-bottom:16px;">Califica el servicio</p>
-
-    <div id="ranking-moto" style="display:none;">
-      <div class="ranking-update">
-        <div style="font-size:12px;color:#3B6D11;margin-bottom:4px;">Tu puntuación</div>
-        <div class="score-big" id="nuevo-score">4.3</div>
-        <div style="font-size:20px;color:#F5D800;margin:4px 0;">★★★★☆</div>
-        <div class="trend" id="trend-text">↑ Subiste esta semana</div>
-      </div>
-    </div>
-
-    <div style="font-size:13px;font-weight:600;color:#2C2C2A;margin-bottom:6px;" id="label-califica">Califica a tu mototaxista</div>
-    <div class="stars-input" id="stars-input">
+  <div class="calif-block" id="calif-block">
+    <div class="calif-titulo">🏁 ¡Carrera completada!</div>
+    <div class="calif-sub" id="calif-sub">Califica el servicio</div>
+    <div class="stars-row" id="stars-row">
       <span onclick="setStar(1)">★</span>
       <span onclick="setStar(2)">★</span>
       <span onclick="setStar(3)">★</span>
       <span onclick="setStar(4)">★</span>
       <span onclick="setStar(5)">★</span>
     </div>
-    <div class="star-label" id="star-label">Toca para calificar</div>
-    <textarea id="comentario" placeholder="Deja un comentario (opcional)..."></textarea>
-    <button class="btn-confirmar" onclick="enviarCalificacion()">Enviar calificación y finalizar</button>
+    <div class="star-lbl" id="star-lbl">Toca para calificar</div>
+    <textarea id="comentario" placeholder="Comentario opcional..."></textarea>
+    <button class="btn-accion" onclick="enviarCalificacion()">Enviar y finalizar</button>
   </div>
 
 </div>
@@ -137,133 +245,276 @@
   import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
   import { doc, onSnapshot, updateDoc, getDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-  const params = new URLSearchParams(location.search);
-  const carreraId = params.get('id');
-  const rol = params.get('rol') || 'cliente';
-  let map, motoMarker, starsVal = 0, userId, carreraData;
-  const labels = ['','Muy malo','Malo','Regular','Bueno','Excelente'];
+  const params  = new URLSearchParams(location.search);
+  const cId     = params.get('id');
+  const rol     = params.get('rol') || 'cliente';  // 'cliente' | 'mototaxista'
 
-  onAuthStateChanged(auth, async user => {
-    if (!user) { location.href='index.html'; return; }
+  let map, motoMarker, clienteMarker, starsVal = 0, userId;
+
+  const LABELS_STAR = ['','Muy malo','Malo','Regular','Bueno','Excelente'];
+
+  // ── ESTADOS ──────────────────────────────────────────────
+  // aceptada      → mototaxista va al cliente
+  // recogido      → mototaxista confirma que recogió al cliente (cliente debe confirmar)
+  // cliente_confirmo → cliente confirmó subida → carrera en curso
+  // moto_llego    → mototaxista confirma llegada destino (cliente debe confirmar)
+  // completada    → cliente confirmó llegada → mostrar calificación
+  // ─────────────────────────────────────────────────────────
+
+  onAuthStateChanged(auth, user => {
+    if (!user) { location.href = 'index.html'; return; }
     userId = user.uid;
+    if (rol === 'mototaxista') {
+      document.getElementById('header').classList.add('moto-header');
+    }
     initMap();
     escucharCarrera();
-    if (rol === 'mototaxista') {
-      document.getElementById('header-sub').textContent = 'Mototaxista';
-      document.getElementById('btn-accion').textContent = 'Confirmar llegada al destino';
-      document.getElementById('label-califica').textContent = 'Califica a tu pasajero';
-    } else {
-      document.getElementById('btn-accion').textContent = 'Confirmar que llegué';
-    }
+    if (rol === 'mototaxista') rastrearPosicion();
   });
 
   function initMap() {
-    map = L.map('map').setView([10.1628,-74.7277],15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OSM'}).addTo(map);
+    map = L.map('map').setView([10.1628, -74.7277], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OSM' }).addTo(map);
   }
 
-  function escucharCarrera() {
-    onSnapshot(doc(db,'carreras',carreraId), snap => {
-      const d = snap.data();
-      if (!d) return;
-      carreraData = d;
-
-      document.getElementById('header-nombre').textContent = rol==='cliente' ? (d.mototaxistaNombre||'Mototaxista') : (d.clienteNombre||'Cliente');
-      document.getElementById('cond-nombre').textContent = rol==='cliente' ? (d.mototaxistaNombre||'Mototaxista') : (d.clienteNombre||'Cliente');
-      document.getElementById('cond-avatar').textContent = (rol==='cliente' ? d.mototaxistaNombre : d.clienteNombre||'CL')?.slice(0,2).toUpperCase()||'--';
-      document.getElementById('stat-precio').textContent = '$' + (d.precio||3500).toLocaleString();
-
-      // Progreso simulado
-      let pct = 0;
-      if (d.estado==='aceptada') pct=10;
-      if (d.estado==='en_curso') pct=50;
-      if (d.estado==='moto_confirmo') pct=90;
-      if (d.estado==='completada') pct=100;
-      document.getElementById('prog-fill').style.width = pct+'%';
-      document.getElementById('prog-pct').textContent = pct+'% del recorrido';
-
-      // Mapa mototaxista
-      if (d.motoLat && d.motoLng) {
-        if (motoMarker) motoMarker.setLatLng([d.motoLat,d.motoLng]);
-        else { const ico=L.divIcon({html:'🏍️',className:'',iconSize:[28,28]}); motoMarker=L.marker([d.motoLat,d.motoLng],{ico}).addTo(map); }
-        map.setView([d.motoLat,d.motoLng],16);
-      }
-
-      // Estado UI
-      if (d.estado==='moto_confirmo' && rol==='cliente') {
-        document.getElementById('estado-badge').textContent = 'Confirmar llegada';
-        document.getElementById('btn-accion').textContent = 'Sí, llegué bien';
-        mostrarToast('El mototaxista confirmó llegada. ¿Llegaste bien?');
-      }
-      if (d.estado==='completada') {
-        document.getElementById('acciones').style.display='none';
-        document.getElementById('calif-section').classList.add('show');
-        document.getElementById('estado-badge').textContent = '¡Completada!';
-        if (rol==='mototaxista') {
-          document.getElementById('ranking-moto').style.display='block';
-          document.getElementById('nuevo-score').textContent = '4.3';
-        }
-      }
+  function rastrearPosicion() {
+    navigator.geolocation.watchPosition(async pos => {
+      const lat = pos.coords.latitude, lng = pos.coords.longitude;
+      await updateDoc(doc(db, 'carreras', cId), { motoLat: lat, motoLng: lng });
     });
   }
 
+  function escucharCarrera() {
+    onSnapshot(doc(db, 'carreras', cId), snap => {
+      const d = snap.data();
+      if (!d) return;
+      renderEstado(d);
+    });
+  }
+
+  function renderEstado(d) {
+    const estado = d.estado;
+
+    // ── Datos persona ──
+    const esCliente = rol === 'cliente';
+    const nombre    = esCliente ? (d.mototaxistaNombre || 'Mototaxista') : (d.clienteNombre || 'Cliente');
+    const iniciales = nombre.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase();
+    document.getElementById('per-avatar').textContent  = iniciales;
+    document.getElementById('per-nombre').textContent  = nombre;
+    document.getElementById('header-nombre').textContent = nombre;
+    document.getElementById('per-sub').textContent     = esCliente ? 'Mototaxista' : `${d.pasajeros || 1} pasajero(s)`;
+    document.getElementById('ruta-origen').textContent  = d.origen  || '--';
+    document.getElementById('ruta-destino').textContent = d.destino || '--';
+    document.getElementById('stat-precio').textContent  = '$' + (d.precio || 3500).toLocaleString();
+    document.getElementById('stat-pas').textContent     = (d.pasajeros || 1) + (d.pasajeros > 1 ? ' 👥' : ' 👤');
+
+    // ── Mapa mototaxista ──
+    if (d.motoLat && d.motoLng) {
+      if (motoMarker) motoMarker.setLatLng([d.motoLat, d.motoLng]);
+      else {
+        const ico = L.divIcon({ html:'🏍️', className:'', iconSize:[28,28] });
+        motoMarker = L.marker([d.motoLat, d.motoLng], { icon: ico }).addTo(map);
+      }
+      map.setView([d.motoLat, d.motoLng], 16);
+    }
+
+    // ── Timeline ──
+    setTimeline(estado);
+
+    // ── Badge y botón por estado+rol ──
+    const badge   = document.getElementById('estado-badge');
+    const btnAcc  = document.getElementById('btn-accion');
+    const msg     = document.getElementById('accion-msg');
+    const acBlock = document.getElementById('accion-block');
+    const calBlock= document.getElementById('calif-block');
+
+    // Reset
+    msg.classList.remove('show');
+    btnAcc.disabled = false;
+    btnAcc.classList.remove('amarillo');
+    acBlock.style.display = 'block';
+    calBlock.classList.remove('show');
+
+    if (estado === 'aceptada') {
+      badge.textContent = 'En camino';
+      if (esCliente) {
+        // Cliente espera
+        msg.textContent = '🏍️ El mototaxista viene hacia ti...';
+        msg.classList.add('show');
+        btnAcc.textContent  = 'Esperando al mototaxista';
+        btnAcc.disabled     = true;
+      } else {
+        // Mototaxista va al cliente
+        btnAcc.textContent = '✅ Llegué donde el cliente';
+        btnAcc.classList.add('amarillo');
+        document.getElementById('header-sub').textContent = 'Ir a recoger a';
+      }
+    }
+
+    else if (estado === 'recogido') {
+      badge.textContent = 'Confirmar subida';
+      if (esCliente) {
+        // Cliente confirma que subió
+        msg.textContent = '🏍️ El mototaxista dice que ya llegó. ¿Subiste?';
+        msg.classList.add('show');
+        btnAcc.textContent = '✅ Sí, ya subí — ¡Vámonos!';
+        btnAcc.classList.add('amarillo');
+        mostrarToast('¡El mototaxista llegó! Confirma que subiste 👆', true);
+      } else {
+        // Mototaxista espera confirmación
+        msg.textContent = '⏳ Esperando que el cliente confirme que subió...';
+        msg.classList.add('show');
+        btnAcc.textContent  = 'Esperando confirmación del cliente';
+        btnAcc.disabled     = true;
+      }
+    }
+
+    else if (estado === 'cliente_confirmo') {
+      badge.textContent = 'En curso';
+      document.getElementById('header-sub').textContent = 'En camino a';
+      if (esCliente) {
+        msg.textContent = '🏁 Estás en camino. ¡Disfruta el viaje!';
+        msg.classList.add('show');
+        btnAcc.textContent = 'Viaje en curso...';
+        btnAcc.disabled = true;
+      } else {
+        btnAcc.textContent = '🏁 Llegué al destino';
+        btnAcc.classList.add('amarillo');
+      }
+    }
+
+    else if (estado === 'moto_llego') {
+      badge.textContent = 'Confirmar llegada';
+      if (esCliente) {
+        msg.textContent = '🏁 El mototaxista dice que llegaron al destino. ¿Es correcto?';
+        msg.classList.add('show');
+        btnAcc.textContent = '✅ Sí, llegué bien — Finalizar';
+        btnAcc.classList.add('amarillo');
+        mostrarToast('¡Llegaron! Confirma para finalizar 👆', true);
+      } else {
+        msg.textContent = '⏳ Esperando confirmación del cliente...';
+        msg.classList.add('show');
+        btnAcc.textContent = 'Esperando al cliente';
+        btnAcc.disabled = true;
+      }
+    }
+
+    else if (estado === 'completada') {
+      badge.textContent = '✅ Completada';
+      acBlock.style.display = 'none';
+      calBlock.classList.add('show');
+      document.getElementById('calif-sub').textContent =
+        esCliente ? 'Califica a tu mototaxista' : 'Califica a tu pasajero';
+    }
+
+    else if (estado === 'cancelada') {
+      badge.textContent = 'Cancelada';
+      acBlock.style.display = 'none';
+      mostrarToast('Carrera cancelada');
+      setTimeout(() => {
+        location.href = esCliente ? 'cliente.html' : 'mototaxista.html';
+      }, 2000);
+    }
+  }
+
+  // ── Acción principal (botón) ──
   window.accionPrincipal = async () => {
-    if (rol==='mototaxista') {
-      await updateDoc(doc(db,'carreras',carreraId), { estado:'moto_confirmo', motoConfirmoAt: serverTimestamp() });
+    const snap = await getDoc(doc(db, 'carreras', cId));
+    const estado = snap.data()?.estado;
+    const esCliente = rol === 'cliente';
+
+    if (estado === 'aceptada' && !esCliente) {
+      // Mototaxista llegó donde el cliente
+      await updateDoc(doc(db,'carreras',cId), { estado:'recogido', recogidoAt: serverTimestamp() });
+      mostrarToast('Confirmado. Esperando que el cliente suba...');
+    }
+    else if (estado === 'recogido' && esCliente) {
+      // Cliente confirma subida
+      await updateDoc(doc(db,'carreras',cId), { estado:'cliente_confirmo', clienteConfirmoAt: serverTimestamp() });
+      mostrarToast('¡Perfecto! Iniciando carrera 🚀');
+    }
+    else if (estado === 'cliente_confirmo' && !esCliente) {
+      // Mototaxista llegó al destino
+      await updateDoc(doc(db,'carreras',cId), { estado:'moto_llego', motoLlegoAt: serverTimestamp() });
       mostrarToast('Confirmado. Esperando al cliente...');
-      document.getElementById('btn-accion').disabled = true;
-      document.getElementById('btn-accion').textContent = 'Esperando confirmación del cliente...';
-    } else {
-      await updateDoc(doc(db,'carreras',carreraId), { estado:'completada', completadaAt: serverTimestamp() });
+    }
+    else if (estado === 'moto_llego' && esCliente) {
+      // Cliente confirma llegada → completada
+      await updateDoc(doc(db,'carreras',cId), { estado:'completada', completadaAt: serverTimestamp() });
     }
   };
 
   window.cancelarCarrera = async () => {
-    if (confirm('¿Seguro que deseas cancelar?')) {
-      await updateDoc(doc(db,'carreras',carreraId), { estado:'cancelada' });
-      location.href = rol==='mototaxista' ? 'mototaxista.html' : 'cliente.html';
-    }
+    if (!confirm('¿Seguro que deseas cancelar la carrera?')) return;
+    await updateDoc(doc(db,'carreras',cId), { estado:'cancelada', canceladaAt: serverTimestamp() });
+    location.href = rol === 'mototaxista' ? 'mototaxista.html' : 'cliente.html';
   };
 
-  window.setStar = (n) => {
+  // ── Timeline visual ──
+  function setTimeline(estado) {
+    const steps = { aceptada:1, recogido:2, cliente_confirmo:2, moto_llego:3, completada:4 };
+    const paso  = steps[estado] || 1;
+    for (let i = 1; i <= 4; i++) {
+      const dot  = document.getElementById('tl' + i);
+      const done = i < paso;
+      const act  = i === paso;
+      dot.classList.toggle('done', done);
+      dot.classList.toggle('active', act);
+      if (i < 4) {
+        const line = document.getElementById('tl-line' + i);
+        if (line) line.classList.toggle('done', i < paso);
+      }
+    }
+  }
+
+  // ── Calificación ──
+  window.setStar = n => {
     starsVal = n;
-    document.querySelectorAll('#stars-input span').forEach((s,i) => s.classList.toggle('active', i<n));
-    document.getElementById('star-label').textContent = labels[n];
+    document.querySelectorAll('#stars-row span').forEach((s,i) => s.classList.toggle('on', i < n));
+    document.getElementById('star-lbl').textContent = LABELS_STAR[n];
   };
 
   window.enviarCalificacion = async () => {
-    if (starsVal === 0) { mostrarToast('Selecciona una calificación'); return; }
-    const campo = rol==='cliente' ? 'calificacionCliente' : 'calificacionMoto';
-    await updateDoc(doc(db,'carreras',carreraId), {
+    if (starsVal === 0) { mostrarToast('Selecciona una calificación ⭐'); return; }
+    const esCliente = rol === 'cliente';
+    const campo = esCliente ? 'calCliente' : 'calMoto';
+
+    await updateDoc(doc(db,'carreras',cId), {
       [campo]: starsVal,
-      [campo+'Comentario']: document.getElementById('comentario').value,
-      [campo+'At']: serverTimestamp()
+      [campo + 'Comentario']: document.getElementById('comentario').value.trim(),
+      [campo + 'At']: serverTimestamp()
     });
-    if (rol==='mototaxista') {
-      const motoRef = doc(db,'mototaxistas',userId);
-      const motoSnap = await getDoc(motoRef);
-      if (motoSnap.exists()) {
-        const md = motoSnap.data();
-        const totalCarreras = (md.carreras||0)+1;
-        const nuevoRanking = ((md.ranking||4.3)*(totalCarreras-1)+starsVal)/totalCarreras;
-        await updateDoc(motoRef, { ranking: nuevoRanking, carreras: totalCarreras, disponible: true });
+
+    // Si es mototaxista, actualizar su ranking
+    if (!esCliente) {
+      const mRef  = doc(db,'mototaxistas', userId);
+      const mSnap = await getDoc(mRef);
+      if (mSnap.exists()) {
+        const md      = mSnap.data();
+        const total   = (md.carreras || 0) + 1;
+        const ranking = ((md.ranking || 4.0) * (total - 1) + starsVal) / total;
+        await updateDoc(mRef, {
+          ranking,
+          carreras: total,
+          carrerasHoy: (md.carrerasHoy || 0) + 1,
+          gananciasHoy: (md.gananciasHoy || 0) + (md.ultimoPrecio || 3500),
+          disponible: true
+        });
       }
     }
-    mostrarToast('¡Gracias por tu calificación!');
-    setTimeout(() => { location.href = rol==='mototaxista' ? 'mototaxista.html' : 'cliente.html'; }, 2000);
+
+    mostrarToast('¡Gracias por calificar! 🌟');
+    setTimeout(() => {
+      location.href = esCliente ? 'cliente.html' : 'mototaxista.html';
+    }, 2000);
   };
 
-  // Actualizar posición en tiempo real si es mototaxista
-  if (rol==='mototaxista') {
-    navigator.geolocation.watchPosition(async pos => {
-      await updateDoc(doc(db,'carreras',carreraId), { motoLat: pos.coords.latitude, motoLng: pos.coords.longitude });
-    });
-  }
-
-  function mostrarToast(msg) {
-    const t=document.getElementById('toast');
-    t.textContent=msg; t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),3000);
+  function mostrarToast(msg, amarillo = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.toggle('amarillo', amarillo);
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3500);
   }
 </script>
 </body>

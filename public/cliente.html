@@ -22,10 +22,26 @@
     .panel { background:#fff; border-radius:20px 20px 0 0; margin-top:-12px; padding:20px 18px 32px; position:relative; z-index:10; }
 
     label { font-size:12px; color:#5F5E5A; display:block; margin-bottom:4px; }
-    .input-wrap { position:relative; margin-bottom:14px; }
+    .input-wrap { position:relative; margin-bottom:12px; }
     .input-wrap input { width:100%; padding:11px 14px 11px 36px; border-radius:10px; border:1.5px solid #D3D1C7; font-size:14px; background:#F1EFE8; color:#2C2C2A; outline:none; }
     .input-wrap input:focus { border-color:#1A6B2F; }
     .input-wrap .ico { position:absolute; left:11px; top:50%; transform:translateY(-50%); font-size:16px; }
+    .btn-gps {
+      position:absolute; right:8px; top:50%; transform:translateY(-50%);
+      background:#1A6B2F; color:#fff; border:none; border-radius:8px;
+      font-size:11px; font-weight:700; padding:5px 8px; cursor:pointer; white-space:nowrap;
+    }
+
+    /* Pasajeros selector */
+    .pasajeros-wrap { margin-bottom:14px; }
+    .pasajeros-wrap .lbl { font-size:12px; color:#5F5E5A; margin-bottom:6px; }
+    .pasajeros-btns { display:flex; gap:8px; }
+    .pas-btn {
+      flex:1; padding:10px 6px; border-radius:10px; border:1.5px solid #D3D1C7;
+      background:#F1EFE8; color:#5F5E5A; font-size:13px; font-weight:600;
+      cursor:pointer; text-align:center; transition:.15s;
+    }
+    .pas-btn.active { background:#1A6B2F; color:#fff; border-color:#1A6B2F; }
 
     .stats { display:flex; gap:10px; margin-bottom:16px; }
     .stat { flex:1; background:#EAF3DE; border-radius:10px; padding:10px; text-align:center; }
@@ -38,16 +54,30 @@
 
     .motos-badge { position:absolute; top:-16px; right:18px; background:#1A6B2F; color:#fff; font-size:11px; padding:5px 12px; border-radius:20px; font-weight:600; }
 
-    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:100; align-items:flex-end; justify-content:center; }
+    /* Modal buscando */
+    .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.55); z-index:100; align-items:flex-end; justify-content:center; }
     .modal-overlay.show { display:flex; }
     .modal { background:#fff; border-radius:20px 20px 0 0; padding:24px 20px 36px; width:100%; max-width:400px; }
-    .modal h3 { font-size:16px; font-weight:700; color:#1A6B2F; margin-bottom:16px; text-align:center; }
-    .modal .moto-card { background:#EAF3DE; border-radius:12px; padding:14px; margin-bottom:14px; }
-    .modal .moto-info { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
-    .modal .moto-avatar { width:44px; height:44px; border-radius:50%; background:#1A6B2F; display:flex; align-items:center; justify-content:center; font-weight:700; color:#F5D800; font-size:14px; }
-    .modal .moto-name { font-size:14px; font-weight:700; color:#1A6B2F; }
-    .modal .moto-placa { font-size:12px; color:#3B6D11; }
-    .modal .stars { color:#F5D800; font-size:14px; }
+    .modal h3 { font-size:16px; font-weight:700; color:#1A6B2F; margin-bottom:8px; text-align:center; }
+    .modal .sub { text-align:center; font-size:13px; color:#5F5E5A; margin-bottom:20px; }
+
+    /* Spinner */
+    .spinner-wrap { display:flex; justify-content:center; margin-bottom:20px; }
+    .spinner { width:44px; height:44px; border:4px solid #EAF3DE; border-top-color:#1A6B2F; border-radius:50%; animation:spin 0.8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* Card mototaxista aceptado */
+    .moto-card { background:#EAF3DE; border-radius:14px; padding:16px; margin-bottom:14px; display:none; }
+    .moto-card.show { display:block; animation: fadeIn .3s ease; }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    .moto-info { display:flex; align-items:center; gap:12px; margin-bottom:12px; }
+    .moto-avatar { width:48px; height:48px; border-radius:50%; background:#1A6B2F; display:flex; align-items:center; justify-content:center; font-weight:800; color:#F5D800; font-size:16px; }
+    .moto-name { font-size:15px; font-weight:700; color:#1A6B2F; }
+    .moto-placa { font-size:12px; color:#3B6D11; margin-top:2px; }
+    .moto-stars { color:#F5D800; font-size:14px; margin-top:2px; }
+    .badge-aceptado { background:#1A6B2F; color:#fff; font-size:11px; font-weight:700; padding:4px 10px; border-radius:20px; margin-left:auto; }
+
+    .btn-ver-carrera { width:100%; padding:12px; background:#1A6B2F; color:#fff; border:none; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer; }
     .btn-cancelar { width:100%; padding:12px; background:#fff; color:#E24B4A; border:1.5px solid #E24B4A; border-radius:12px; font-size:14px; font-weight:600; cursor:pointer; margin-top:10px; }
 
     .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%); background:#1A6B2F; color:#fff; padding:10px 20px; border-radius:20px; font-size:13px; font-weight:600; z-index:200; display:none; }
@@ -69,18 +99,31 @@
 <div class="panel">
   <div class="motos-badge" id="motos-badge">0 motos cerca</div>
 
+  <!-- Origen: editable + botón GPS -->
   <div class="input-wrap">
     <span class="ico">📍</span>
-    <label></label>
-    <input type="text" id="origen" placeholder="Tu ubicación actual..." readonly/>
+    <input type="text" id="origen" placeholder="¿Dónde estás exactamente?"/>
+    <button class="btn-gps" onclick="usarGPS()">📡 GPS</button>
   </div>
 
+  <!-- Destino -->
   <div class="input-wrap">
     <span class="ico">🏁</span>
-    <label></label>
     <input type="text" id="destino" placeholder="¿A dónde vas?"/>
   </div>
 
+  <!-- Pasajeros -->
+  <div class="pasajeros-wrap">
+    <div class="lbl">👥 ¿Cuántos pasajeros?</div>
+    <div class="pasajeros-btns">
+      <button class="pas-btn active" onclick="selPasajero(1, this)">1</button>
+      <button class="pas-btn" onclick="selPasajero(2, this)">2</button>
+      <button class="pas-btn" onclick="selPasajero(3, this)">3</button>
+      <button class="pas-btn" onclick="selPasajero(4, this)">4+</button>
+    </div>
+  </div>
+
+  <!-- Estimados -->
   <div class="stats">
     <div class="stat"><div class="val" id="precio-est">$--</div><div class="lbl">Precio aprox.</div></div>
     <div class="stat"><div class="val" id="tiempo-est">-- min</div><div class="lbl">Tiempo est.</div></div>
@@ -90,22 +133,34 @@
   <button class="btn-pedir" id="btn-pedir" onclick="pedirCarrera()" disabled>Pedir moto</button>
 </div>
 
+<!-- Modal buscando / aceptado -->
 <div class="modal-overlay" id="modal-buscando">
   <div class="modal">
-    <h3>🔍 Buscando mototaxista...</h3>
-    <p style="text-align:center;font-size:13px;color:#5F5E5A;margin-bottom:20px;">Tu solicitud fue enviada a los mototaxistas disponibles</p>
-    <div class="moto-card" id="moto-aceptado" style="display:none;">
-      <div class="moto-info">
-        <div class="moto-avatar" id="moto-avatar">JP</div>
-        <div>
-          <div class="moto-name" id="moto-nombre">Juan Pérez</div>
-          <div class="moto-placa" id="moto-placa">Honda CB110 • ABC 123</div>
-          <div class="stars">★★★★☆ <span style="font-size:12px;color:#5F5E5A;">4.3</span></div>
-        </div>
-      </div>
-      <button class="btn-pedir" onclick="verCarrera()" style="font-size:14px;padding:11px;">Ver en mapa</button>
+    <div id="estado-buscando">
+      <h3>🔍 Buscando mototaxista...</h3>
+      <p class="sub">Tu solicitud fue enviada a los mototaxistas disponibles</p>
+      <div class="spinner-wrap"><div class="spinner"></div></div>
     </div>
-    <button class="btn-cancelar" onclick="cancelarBusqueda()">Cancelar</button>
+
+    <div id="estado-aceptado" style="display:none;">
+      <h3>✅ ¡Mototaxista en camino!</h3>
+      <p class="sub">Ya viene hacia ti</p>
+    </div>
+
+    <div class="moto-card" id="moto-card">
+      <div class="moto-info">
+        <div class="moto-avatar" id="moto-avatar">MT</div>
+        <div>
+          <div class="moto-name" id="moto-nombre">Mototaxista</div>
+          <div class="moto-placa" id="moto-placa">Honda CB110</div>
+          <div class="moto-stars" id="moto-stars">★★★★☆</div>
+        </div>
+        <div class="badge-aceptado">En camino</div>
+      </div>
+      <button class="btn-ver-carrera" onclick="verCarrera()">📍 Ver en mapa</button>
+    </div>
+
+    <button class="btn-cancelar" id="btn-cancelar" onclick="cancelarBusqueda()">Cancelar</button>
   </div>
 </div>
 
@@ -119,10 +174,34 @@
 
   let map, userMarker, userLat, userLng, carreraId, unsubCarrera;
   let mototaxistasMarkers = {};
+  let pasajeros = 1;
+
+  // Selector de pasajeros
+  window.selPasajero = (n, btn) => {
+    pasajeros = n;
+    document.querySelectorAll('.pas-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    calcularEstimado();
+  };
+
+  // GPS manual
+  window.usarGPS = () => {
+    navigator.geolocation.getCurrentPosition(pos => {
+      userLat = pos.coords.latitude;
+      userLng = pos.coords.longitude;
+      map.setView([userLat, userLng], 17);
+      if (userMarker) userMarker.setLatLng([userLat, userLng]);
+      else userMarker = L.marker([userLat, userLng]).addTo(map).bindPopup('Tú').openPopup();
+      document.getElementById('origen').value = `${userLat.toFixed(5)}, ${userLng.toFixed(5)}`;
+      mostrarToast('📡 Ubicación GPS obtenida');
+    }, () => mostrarToast('No se pudo obtener GPS'));
+  };
 
   onAuthStateChanged(auth, user => {
     if (!user) { window.location.href = 'index.html'; return; }
-    const initials = user.displayName ? user.displayName.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : user.email.slice(0,2).toUpperCase();
+    const initials = user.displayName
+      ? user.displayName.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase()
+      : user.email.slice(0,2).toUpperCase();
     document.getElementById('user-name').textContent = user.displayName || user.email;
     document.getElementById('avatar').textContent = initials;
     initMap();
@@ -132,16 +211,28 @@
   function initMap() {
     map = L.map('map').setView([10.1628, -74.7277], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OSM' }).addTo(map);
+
+    // Intentar GPS automático al cargar
     navigator.geolocation.getCurrentPosition(pos => {
       userLat = pos.coords.latitude;
       userLng = pos.coords.longitude;
       map.setView([userLat, userLng], 16);
       userMarker = L.marker([userLat, userLng]).addTo(map).bindPopup('Tú').openPopup();
-      document.getElementById('origen').value = 'Mi ubicación actual';
+      document.getElementById('origen').value = 'Mi ubicación (GPS)';
       calcularEstimado();
     }, () => {
       userLat = 10.1628; userLng = -74.7277;
-      document.getElementById('origen').value = 'Algarrobo, Magdalena';
+      document.getElementById('origen').value = '';
+    });
+
+    // Click en mapa para mover marcador de origen
+    map.on('click', e => {
+      userLat = e.latlng.lat;
+      userLng = e.latlng.lng;
+      if (userMarker) userMarker.setLatLng([userLat, userLng]);
+      else userMarker = L.marker([userLat, userLng]).addTo(map).bindPopup('Tú').openPopup();
+      document.getElementById('origen').value = `${userLat.toFixed(5)}, ${userLng.toFixed(5)}`;
+      calcularEstimado();
     });
   }
 
@@ -150,11 +241,12 @@
     onSnapshot(q, snap => {
       Object.values(mototaxistasMarkers).forEach(m => map.removeLayer(m));
       mototaxistasMarkers = {};
-      snap.forEach(doc => {
-        const d = doc.data();
-        if (d.lat && d.lng) {
+      snap.forEach(d => {
+        const data = d.data();
+        if (data.lat && data.lng) {
           const icon = L.divIcon({ html: '🏍️', className:'', iconSize:[28,28] });
-          mototaxistasMarkers[doc.id] = L.marker([d.lat, d.lng], {icon}).addTo(map).bindPopup(d.nombre || 'Mototaxista');
+          mototaxistasMarkers[d.id] = L.marker([data.lat, data.lng], {icon}).addTo(map)
+            .bindPopup(data.nombre || 'Mototaxista');
         }
       });
       document.getElementById('motos-badge').textContent = snap.size + ' motos cerca';
@@ -163,39 +255,78 @@
 
   function calcularEstimado() {
     const destino = document.getElementById('destino').value;
-    if (destino.length > 3) {
-      document.getElementById('precio-est').textContent = '$3.500';
+    const origen = document.getElementById('origen').value;
+    if (destino.length > 3 && origen.length > 3) {
+      const base = 3500;
+      const extra = pasajeros > 1 ? (pasajeros - 1) * 500 : 0;
+      const total = base + extra;
+      document.getElementById('precio-est').textContent = '$' + total.toLocaleString();
       document.getElementById('tiempo-est').textContent = '5 min';
       document.getElementById('dist-est').textContent = '1.2 km';
       document.getElementById('btn-pedir').disabled = false;
+    } else {
+      document.getElementById('btn-pedir').disabled = true;
     }
   }
 
   document.getElementById('destino').addEventListener('input', calcularEstimado);
+  document.getElementById('origen').addEventListener('input', calcularEstimado);
 
   window.pedirCarrera = async () => {
     const user = auth.currentUser;
     const destino = document.getElementById('destino').value;
-    if (!destino) return;
+    const origen = document.getElementById('origen').value;
+    if (!destino || !origen) return;
+
     document.getElementById('modal-buscando').classList.add('show');
+
+    const base = 3500;
+    const extra = pasajeros > 1 ? (pasajeros - 1) * 500 : 0;
+    const precio = base + extra;
+
     const ref = await addDoc(collection(db, 'carreras'), {
       clienteId: user.uid,
       clienteNombre: user.displayName || user.email,
-      origenLat: userLat, origenLng: userLng,
-      origen: document.getElementById('origen').value,
+      origenLat: userLat,
+      origenLng: userLng,
+      origen,
       destino,
+      pasajeros,
       estado: 'buscando',
-      precio: 3500,
+      precio,
       createdAt: serverTimestamp()
     });
+
     carreraId = ref.id;
+
+    // Escuchar cambios en tiempo real
     unsubCarrera = onSnapshot(doc(db, 'carreras', carreraId), snap => {
       const d = snap.data();
-      if (d?.estado === 'aceptada') {
-        document.getElementById('moto-nombre').textContent = d.mototaxistaNombre || 'Mototaxista';
-        document.getElementById('moto-avatar').textContent = (d.mototaxistaNombre||'MT').slice(0,2).toUpperCase();
-        document.getElementById('moto-aceptado').style.display = 'block';
-        mostrarToast('¡Mototaxista en camino!');
+      if (!d) return;
+
+      if (d.estado === 'aceptada') {
+        // Cambiar UI a "aceptado"
+        document.getElementById('estado-buscando').style.display = 'none';
+        document.getElementById('estado-aceptado').style.display = 'block';
+        document.getElementById('btn-cancelar').style.display = 'none';
+
+        // Mostrar datos del mototaxista
+        const nombre = d.mototaxistaNombre || 'Mototaxista';
+        document.getElementById('moto-nombre').textContent = nombre;
+        document.getElementById('moto-avatar').textContent = nombre.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase();
+        document.getElementById('moto-card').classList.add('show');
+
+        mostrarToast('¡Mototaxista en camino! 🏍️');
+
+        // Ir automáticamente a carrera después de 3 seg
+        setTimeout(() => {
+          window.location.href = 'carrera.html?id=' + carreraId + '&rol=cliente';
+        }, 3000);
+      }
+
+      if (d.estado === 'cancelada') {
+        document.getElementById('modal-buscando').classList.remove('show');
+        mostrarToast('Carrera cancelada');
       }
     });
   };
@@ -203,12 +334,23 @@
   window.cancelarBusqueda = async () => {
     if (carreraId) await updateDoc(doc(db, 'carreras', carreraId), { estado: 'cancelada' });
     if (unsubCarrera) unsubCarrera();
+    carreraId = null;
     document.getElementById('modal-buscando').classList.remove('show');
+    // Reset modal
+    document.getElementById('estado-buscando').style.display = 'block';
+    document.getElementById('estado-aceptado').style.display = 'none';
+    document.getElementById('btn-cancelar').style.display = 'block';
+    document.getElementById('moto-card').classList.remove('show');
   };
 
-  window.verCarrera = () => { window.location.href = 'carrera.html?id=' + carreraId; };
+  window.verCarrera = () => {
+    window.location.href = 'carrera.html?id=' + carreraId + '&rol=cliente';
+  };
 
-  window.cerrarSesion = async () => { await signOut(auth); window.location.href = 'index.html'; };
+  window.cerrarSesion = async () => {
+    await signOut(auth);
+    window.location.href = 'index.html';
+  };
 
   function mostrarToast(msg) {
     const t = document.getElementById('toast');
